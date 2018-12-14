@@ -1,5 +1,7 @@
 from itertools import product, combinations
 from math import inf as infinity
+
+import cfgGenerator
 '''
 Based on a 3 x 3 CGRA with 3 memory FUs
 MFU0 FU1 FU2
@@ -8,32 +10,34 @@ MFU6 FU7 FU8
 '''
 
 
-DIMENSION = 3
-WP = 0
-Waff = 0
+DIMENSION = 2
 
 
-class Slot:
-    def __init__(self, is_mem):
-        self.scheduled = False
-        self.inst = None
-        self.is_mem = is_mem
-        self.static_cost = 10 if is_mem else 1
+class Inst:
+    def __init__(self, dagNode=None):
+        if dagNode:
+            self.id = dagNode.prod
+            self.node = dagNode
+        else:
+            self.id = None
+            self.node = None
 
 class Scheduler:
     '''
     Constructor. Takes ii and dag for thing to schedule
     '''
-    def __init__(self, ii, dag):
-        self.ii = ii
+    def __init__(self, dag):
         self.dag = dag
-        time_slice = [Slot(i % DIMENSION == 0) for i in range(DIMENSION * DIMENSION)]
+
+    '''
+    the main logic for scheduling
+    '''    
+    def schedule(self, ii):
+        time_slice = [Inst() for i in range(DIMENSION * DIMENSION)]
         #TODO make dag output numops
-        #TODO come up with a better bound on this schedule
         self.schedule = [[i for i in time_slice] for j in range(ii * dag.numops)]
-        self.placed_ops = []
-        self.placed_ops_fu_ids = []
-        self.placed_ops_times = []
+        return True
+
     '''
     Prints current state of schedule
     #TODO: Nice way to display inst if scheduled
@@ -41,107 +45,32 @@ class Scheduler:
     def print(self):
         print ("CGRA")
         print ('''
-        |0(M)| 1 | 2 |
-        |3(M)| 4 | 5 |
-        |6(M)| 7 | 8 |
+        | 0 | 1 |
+        | 2 | 3 |
         ''')
-        print ('T  |0||1||2||3||4||5||6||7||8|')
+        print ('T  |0||1||2||3|')
         for time in range(len(self.schedule)):
             print('   ' + '-' * 3 * DIMENSION * DIMENSION)
             print('{}'.format(time).ljust(3),end='')
             for i in range(DIMENSION * DIMENSION):
-                val = 'X' if self.schedule[time][i].scheduled else ' '
+                val = self.schedule[time][i].id if self.schedule[time][i].id else ' '
                 print('|' + val + '|',end='')
             print()
     '''
     returns the list of FU neighbors. Useful for route searching
     '''
     def neighbors(self, fu_id):
-        row = fu_id // DIMENSION
-        col = fu_id % DIMENSION
-        neighbor_rows = [row]
-        if row - 1 >= 0:
-            neighbor_rows.append(row - 1)
-        if row + 1 < DIMENSION:
-            neighbor_rows.append(row + 1)
-        neighbor_cols = [col]
-        if col - 1 >= 0:
-            neighbor_cols.append(col - 1)
-        if col + 1 < DIMENSION:
-            neighbor_cols.append(col + 1)
-        neighbors = [r * DIMENSION + c for r,c in list(product(neighbor_rows, neighbor_cols))]
-        return neighbors[1:]
-
-    '''
-    Raw grid distance used in the affinity heuristic. Every node is either dist 1 or 2 apart.
-    '''
-    def grid_distance(self, fu1, fu2):
-        if fu2 in self.neighbors(fu1):
-            return 1
-        return 2
-
-    '''
-    formula to combine n many probability values
-    '''
-    def combine(self, prob_list):
-        P = 0
-        n = len(prob_list)
-        for k in range(1, n + 1):
-            term = 0
-            for combo in combinations(range(n), k):
-                prod = 1
-                for idx in combo:
-                    prod *= prob_list[idx]
-                term += prod
-            term *= (-1) ** (k - 1)
-            P += term
-        return P
-    
-    '''
-    generates the probability cost per slot in the schedule
-    '''
-    def gen_probabilities(self):
-        probability_row = [0] * (DIMENSION * DIMENSION)
-        probability_chart = [[i for i in probability_row] for j in range(len(self.schedule))]
-        #1. Generate the mem probabilities
-        num_mem = self.dag.num_unscheduled_mem_insts()
-        num_slots = 0
-        for time in self.schedule:
-            for slot in time:
-                if slot.is_mem and not slot.scheduled:
-                    num_slots += 1
-        for i in range(len(self.schedule)):
-            for j in in range(len(self.schedule[i])):
-                if self.schedule[i][j].is_mem and not self.schedule[i][j].scheduled:
-                    self.probability_chart[i][j] = num_mem // num_slots
-        #Next, we route existing instructions and compute the usage likelihood, and combine them in
-        #loop through placed instructions + each of their consumers and route them?
-        for inst in zip(self.placed_ops,self.placed_ops_fu_ids, self.placed_ops_times):
-            
-
-        
-            
-
-    '''
-    function to compute cost per slot. Should only be called on available (and reachable?) slots
-    ''' 
-    def routing_cost(self, time, fu_id, inst_to_schedule, probability_chart):
-        max_dist = 5 #TODO: what is this?
-        static_cost = self.schedule[time][fu_id].static_cost
-        affinity_cost = 0
-        for i,j in zip(self.placed_ops, self.placed_ops_fu_ids):
-            affinity = 0
-            for d in range(1,max_dist + 1):
-                affinity += 2 ** (max_dist - d) * dag.num_shared_consumers(inst_to_schedule, i, d)
-            if affinity != 0:
-                dist = self.grid_distance(fu_id, j)
-                affinity_cost += dist / affinity
-        #probability_chart = self.gen_probabilities()
-        probability_cost = probability_chart[time][fu_id]
-        if probability_cost == 1:
-            return infinity
+        if fu_id == 0:
+            return [1,2]
+        elif fu_id == 1:
+            return [2,3]
+        elif fu_id == 2:
+            return [0,3]
+        elif fu_id == 3:
+            return [1,2]
         else:
-            return static_cost + Waff * affinity_cost + WP * probability_cost
+            return []
+
 
 
 
@@ -149,26 +78,17 @@ class mock_dag:
     def __init__(self):
         self.numops = 5
     
-    def num_shared_consumers(self, op1, op2, distance):
-        return 1 if distance < 2 else 2
-    
-    def is_mem_inst(self, inst):
-        return True
-    
-    def num_unscheduled_mem_insts(self):
-        return 10
 
 
 if __name__ == '__main__':
     dag = mock_dag()
-    s = Scheduler(2, dag)
-    #for i in range(9):
-    #    print (s.neighbors(i))
-    s.print()
+    s = Scheduler(dag)
+    if s.schedule(2):
+        s.print()
     #for i in combinations(range(6), 6):
     #    for j in i:
     #        print(j, end='')
     #    print()
-    print(s.combine([0.2, 0.5, 0.1, 0.4]))
-    print(s.combine([s.combine([s.combine([0.2, 0.5]), 0.1]), 0.4]))
+    # print(s.combine([0.2, 0.5, 0.1, 0.4]))
+    # print(s.combine([s.combine([s.combine([0.2, 0.5]), 0.1]), 0.4]))
     
