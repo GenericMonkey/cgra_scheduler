@@ -87,10 +87,18 @@ class DAG:
 def dagPrint(DAG):
     dot = Digraph(comment='DAG')
     for item in DAG.memberList:
-        dot.node(item.prod, item.rawLine)
-    for item in DAG.memberList:
+        if item.prod == "": 
+            dot.node(item.rawLine, item.rawLine)
+        else:
+            dot.node(item.prod, item.rawLine)
+    for item in DAG.memberList: 
         for consumed in item.consumerStr:
-            dot.edge(consumed, item.prod)  
+            if consumed == "":
+                pass 
+            elif item.prod == "":
+                dot.edge(consumed, item.rawLine)
+            else:
+                dot.edge(consumed, item.prod)
     dot.render('DAGv')
     #for item in DAG.memberList:
     #    print('opcode is: ' + str(item.op))
