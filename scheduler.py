@@ -29,9 +29,11 @@ class Scheduler:
         self.dag = dag
         time_slice = [Slot(i % DIMENSION == 0) for i in range(DIMENSION * DIMENSION)]
         #TODO make dag output numops
+        #TODO come up with a better bound on this schedule
         self.schedule = [[i for i in time_slice] for j in range(ii * dag.numops)]
         self.placed_ops = []
         self.placed_ops_fu_ids = []
+        self.placed_ops_times = []
     '''
     Prints current state of schedule
     #TODO: Nice way to display inst if scheduled
@@ -94,12 +96,36 @@ class Scheduler:
             term *= (-1) ** (k - 1)
             P += term
         return P
+    
+    '''
+    generates the probability cost per slot in the schedule
+    '''
+    def gen_probabilities(self):
+        probability_row = [0] * (DIMENSION * DIMENSION)
+        probability_chart = [[i for i in probability_row] for j in range(len(self.schedule))]
+        #1. Generate the mem probabilities
+        num_mem = self.dag.num_unscheduled_mem_insts()
+        num_slots = 0
+        for time in self.schedule:
+            for slot in time:
+                if slot.is_mem and not slot.scheduled:
+                    num_slots += 1
+        for i in range(len(self.schedule)):
+            for j in in range(len(self.schedule[i])):
+                if self.schedule[i][j].is_mem and not self.schedule[i][j].scheduled:
+                    self.probability_chart[i][j] = num_mem // num_slots
+        #Next, we route existing instructions and compute the usage likelihood, and combine them in
+        #loop through placed instructions + each of their consumers and route them?
+        for inst in zip(self.placed_ops,self.placed_ops_fu_ids, self.placed_ops_times):
+            
+
+        
             
 
     '''
     function to compute cost per slot. Should only be called on available (and reachable?) slots
     ''' 
-    def routing_cost(self, time, fu_id, inst_to_schedule):
+    def routing_cost(self, time, fu_id, inst_to_schedule, probability_chart):
         max_dist = 5 #TODO: what is this?
         static_cost = self.schedule[time][fu_id].static_cost
         affinity_cost = 0
@@ -110,7 +136,8 @@ class Scheduler:
             if affinity != 0:
                 dist = self.grid_distance(fu_id, j)
                 affinity_cost += dist / affinity
-        probability_cost = 0
+        #probability_chart = self.gen_probabilities()
+        probability_cost = probability_chart[time][fu_id]
         if probability_cost == 1:
             return infinity
         else:
@@ -126,7 +153,10 @@ class mock_dag:
         return 1 if distance < 2 else 2
     
     def is_mem_inst(self, inst):
-        return 
+        return True
+    
+    def num_unscheduled_mem_insts(self):
+        return 10
 
 
 if __name__ == '__main__':
@@ -139,5 +169,6 @@ if __name__ == '__main__':
     #    for j in i:
     #        print(j, end='')
     #    print()
-    #print(s.combine([0.2, 0.5]))
+    print(s.combine([0.2, 0.5, 0.1, 0.4]))
+    print(s.combine([s.combine([s.combine([0.2, 0.5]), 0.1]), 0.4]))
     
