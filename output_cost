@@ -1,0 +1,104 @@
+Printing analysis 'Target Library Information':
+Pass::print not implemented for pass: 'Target Library Information'!
+Printing analysis 'Cost Model Analysis' for function 'kernel':
+Cost Model: Found an estimated cost of 0 for instruction:   br label %5
+Cost Model: Found an estimated cost of 0 for instruction:   %storemerge1 = phi i32 [ 0, %4 ], [ %47, %5 ]
+Cost Model: Found an estimated cost of 1 for instruction:   %6 = sext i32 %storemerge1 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %7 = getelementptr inbounds i32, i32* %0, i64 %6
+Cost Model: Found an estimated cost of 1 for instruction:   %8 = load i32, i32* %7, align 4
+Cost Model: Found an estimated cost of 1 for instruction:   %9 = sub nsw i32 128, %8
+Cost Model: Found an estimated cost of 1 for instruction:   %10 = sext i32 %storemerge1 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %11 = getelementptr inbounds i32, i32* %1, i64 %10
+Cost Model: Found an estimated cost of 1 for instruction:   %12 = load i32, i32* %11, align 4
+Cost Model: Found an estimated cost of 1 for instruction:   %13 = sub nsw i32 64, %12
+Cost Model: Found an estimated cost of 1 for instruction:   %14 = sext i32 %storemerge1 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %15 = getelementptr inbounds i32, i32* %2, i64 %14
+Cost Model: Found an estimated cost of 1 for instruction:   %16 = load i32, i32* %15, align 4
+Cost Model: Found an estimated cost of 1 for instruction:   %17 = add nsw i32 %16, 32
+Cost Model: Found an estimated cost of 1 for instruction:   %18 = mul nsw i32 %9, %9
+Cost Model: Found an estimated cost of 1 for instruction:   %19 = mul nsw i32 %13, %13
+Cost Model: Found an estimated cost of 1 for instruction:   %20 = mul nsw i32 %17, %17
+Cost Model: Found an estimated cost of 1 for instruction:   %21 = add nsw i32 %18, %19
+Cost Model: Found an estimated cost of 1 for instruction:   %22 = add nsw i32 %21, %20
+Cost Model: Found an estimated cost of 1 for instruction:   %23 = ashr i32 %22, 2
+Cost Model: Found an estimated cost of 1 for instruction:   %24 = sext i32 %storemerge1 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %25 = getelementptr inbounds i32, i32* %3, i64 %24
+Cost Model: Found an estimated cost of 1 for instruction:   store i32 %23, i32* %25, align 4
+Cost Model: Found an estimated cost of 1 for instruction:   %26 = add nuw nsw i32 %storemerge1, 1
+Cost Model: Found an estimated cost of 1 for instruction:   %27 = sext i32 %26 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %28 = getelementptr inbounds i32, i32* %0, i64 %27
+Cost Model: Found an estimated cost of 1 for instruction:   %29 = load i32, i32* %28, align 4
+Cost Model: Found an estimated cost of 1 for instruction:   %30 = sub nsw i32 128, %29
+Cost Model: Found an estimated cost of 1 for instruction:   %31 = sext i32 %26 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %32 = getelementptr inbounds i32, i32* %1, i64 %31
+Cost Model: Found an estimated cost of 1 for instruction:   %33 = load i32, i32* %32, align 4
+Cost Model: Found an estimated cost of 1 for instruction:   %34 = sub nsw i32 64, %33
+Cost Model: Found an estimated cost of 1 for instruction:   %35 = sext i32 %26 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %36 = getelementptr inbounds i32, i32* %2, i64 %35
+Cost Model: Found an estimated cost of 1 for instruction:   %37 = load i32, i32* %36, align 4
+Cost Model: Found an estimated cost of 1 for instruction:   %38 = add nsw i32 %37, 32
+Cost Model: Found an estimated cost of 1 for instruction:   %39 = mul nsw i32 %30, %30
+Cost Model: Found an estimated cost of 1 for instruction:   %40 = mul nsw i32 %34, %34
+Cost Model: Found an estimated cost of 1 for instruction:   %41 = mul nsw i32 %38, %38
+Cost Model: Found an estimated cost of 1 for instruction:   %42 = add nsw i32 %39, %40
+Cost Model: Found an estimated cost of 1 for instruction:   %43 = add nsw i32 %42, %41
+Cost Model: Found an estimated cost of 1 for instruction:   %44 = ashr i32 %43, 2
+Cost Model: Found an estimated cost of 1 for instruction:   %45 = sext i32 %26 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %46 = getelementptr inbounds i32, i32* %3, i64 %45
+Cost Model: Found an estimated cost of 1 for instruction:   store i32 %44, i32* %46, align 4
+Cost Model: Found an estimated cost of 1 for instruction:   %47 = add nuw nsw i32 %26, 1
+Cost Model: Found an estimated cost of 1 for instruction:   %48 = icmp ult i32 %47, 1024
+Cost Model: Found an estimated cost of 0 for instruction:   br i1 %48, label %5, label %49, !llvm.loop !2
+Cost Model: Found an estimated cost of 0 for instruction:   %.lcssa4 = phi i32 [ %41, %5 ]
+Cost Model: Found an estimated cost of 0 for instruction:   %.lcssa2 = phi i32 [ %40, %5 ]
+Cost Model: Found an estimated cost of 0 for instruction:   %.lcssa = phi i32 [ %39, %5 ]
+Cost Model: Found an estimated cost of 0 for instruction:   %storemerge.lcssa = phi i32 [ %47, %5 ]
+Cost Model: Found an estimated cost of 0 for instruction:   ret void
+Printing analysis 'Cost Model Analysis' for function 'main':
+Cost Model: Unknown cost for instruction:   %1 = alloca [1024 x i32], align 16
+Cost Model: Found an estimated cost of 0 for instruction:   %.sub = getelementptr inbounds [1024 x i32], [1024 x i32]* %1, i64 0, i64 0
+Cost Model: Unknown cost for instruction:   %2 = alloca [1024 x i32], align 16
+Cost Model: Found an estimated cost of 0 for instruction:   %.sub1 = getelementptr inbounds [1024 x i32], [1024 x i32]* %2, i64 0, i64 0
+Cost Model: Unknown cost for instruction:   %3 = alloca [1024 x i32], align 16
+Cost Model: Found an estimated cost of 0 for instruction:   %.sub2 = getelementptr inbounds [1024 x i32], [1024 x i32]* %3, i64 0, i64 0
+Cost Model: Unknown cost for instruction:   %4 = alloca [1024 x i32], align 16
+Cost Model: Found an estimated cost of 0 for instruction:   %.sub3 = getelementptr inbounds [1024 x i32], [1024 x i32]* %4, i64 0, i64 0
+Cost Model: Found an estimated cost of 0 for instruction:   br label %5
+Cost Model: Found an estimated cost of 0 for instruction:   %storemerge1 = phi i32 [ 0, %0 ], [ %31, %5 ]
+Cost Model: Unknown cost for instruction:   %6 = call i32 @rand() #1
+Cost Model: Found an estimated cost of 1 for instruction:   %7 = srem i32 %6, 64
+Cost Model: Found an estimated cost of 1 for instruction:   %8 = sext i32 %storemerge1 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %9 = getelementptr inbounds [1024 x i32], [1024 x i32]* %1, i64 0, i64 %8
+Cost Model: Found an estimated cost of 1 for instruction:   store i32 %7, i32* %9, align 4
+Cost Model: Unknown cost for instruction:   %10 = call i32 @rand() #1
+Cost Model: Found an estimated cost of 1 for instruction:   %11 = srem i32 %10, 64
+Cost Model: Found an estimated cost of 1 for instruction:   %12 = sext i32 %storemerge1 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %13 = getelementptr inbounds [1024 x i32], [1024 x i32]* %2, i64 0, i64 %12
+Cost Model: Found an estimated cost of 1 for instruction:   store i32 %11, i32* %13, align 4
+Cost Model: Unknown cost for instruction:   %14 = call i32 @rand() #1
+Cost Model: Found an estimated cost of 1 for instruction:   %15 = srem i32 %14, 64
+Cost Model: Found an estimated cost of 1 for instruction:   %16 = sext i32 %storemerge1 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %17 = getelementptr inbounds [1024 x i32], [1024 x i32]* %3, i64 0, i64 %16
+Cost Model: Found an estimated cost of 1 for instruction:   store i32 %15, i32* %17, align 4
+Cost Model: Found an estimated cost of 1 for instruction:   %18 = add nuw nsw i32 %storemerge1, 1
+Cost Model: Unknown cost for instruction:   %19 = call i32 @rand() #1
+Cost Model: Found an estimated cost of 1 for instruction:   %20 = srem i32 %19, 64
+Cost Model: Found an estimated cost of 1 for instruction:   %21 = sext i32 %18 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %22 = getelementptr inbounds [1024 x i32], [1024 x i32]* %1, i64 0, i64 %21
+Cost Model: Found an estimated cost of 1 for instruction:   store i32 %20, i32* %22, align 4
+Cost Model: Unknown cost for instruction:   %23 = call i32 @rand() #1
+Cost Model: Found an estimated cost of 1 for instruction:   %24 = srem i32 %23, 64
+Cost Model: Found an estimated cost of 1 for instruction:   %25 = sext i32 %18 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %26 = getelementptr inbounds [1024 x i32], [1024 x i32]* %2, i64 0, i64 %25
+Cost Model: Found an estimated cost of 1 for instruction:   store i32 %24, i32* %26, align 4
+Cost Model: Unknown cost for instruction:   %27 = call i32 @rand() #1
+Cost Model: Found an estimated cost of 1 for instruction:   %28 = srem i32 %27, 64
+Cost Model: Found an estimated cost of 1 for instruction:   %29 = sext i32 %18 to i64
+Cost Model: Found an estimated cost of 0 for instruction:   %30 = getelementptr inbounds [1024 x i32], [1024 x i32]* %3, i64 0, i64 %29
+Cost Model: Found an estimated cost of 1 for instruction:   store i32 %28, i32* %30, align 4
+Cost Model: Found an estimated cost of 1 for instruction:   %31 = add nuw nsw i32 %18, 1
+Cost Model: Found an estimated cost of 1 for instruction:   %32 = icmp ult i32 %31, 1024
+Cost Model: Found an estimated cost of 0 for instruction:   br i1 %32, label %5, label %33, !llvm.loop !2
+Cost Model: Found an estimated cost of 0 for instruction:   %storemerge.lcssa = phi i32 [ %31, %5 ]
+Cost Model: Unknown cost for instruction:   call void @kernel(i32* nonnull %.sub, i32* nonnull %.sub1, i32* nonnull %.sub2, i32* nonnull %.sub3)
+Cost Model: Found an estimated cost of 0 for instruction:   ret i32 0
