@@ -1,4 +1,4 @@
-from itertools import product, combinations
+from itertools import product, combinations, chain
 from math import inf as infinity
 
 import cfgGenerator
@@ -31,7 +31,7 @@ class Scheduler:
 
     '''
     the main logic for scheduling
-    '''    
+    '''
     def schedule(self, ii):
         time_slice = [Inst() for i in range(DIMENSION * DIMENSION)]
         #TODO make dag output numops
@@ -71,24 +71,44 @@ class Scheduler:
         else:
             return []
 
+    def top_down(self):
+        self.chainlists = []
+        visited = {}
+        for node in self.dag.memberList:
+            new_chain_candidate = node.prod not in visited
+            if new_chain_candidate:
+                for producer in self.dag.producerDict[node.prod]:
+                    if producer.prod not in visited:
+                        new_chain_candidate = False
+            if len(node.consumes) == 0 or new_chain_candidate:
+                cl = [node.prod]
+                visited[node.prod] = True
+                candidate_children = [c for c in node.eatsme if c.prod not in visited]
+                while len(candidate_children) != 0:
+                    to_add = candidate_children[0]
+                    cl.append(to_add.prod)
+                    visited[to_add.prod] = True
+                    candidate_children = [c for c in to_add.eatsme if c.prod not in visited]
+                chainlists.append(cl)
+        print(self.chainlists)
 
 
 
-class mock_dag:
-    def __init__(self):
-        self.numops = 5
-    
+
+
+
 
 
 if __name__ == '__main__':
-    dag = mock_dag()
+    dag = cfgGenerator.DAG('output.ll')
     s = Scheduler(dag)
-    if s.schedule(2):
-        s.print()
+    s.top_down()
+    #if s.schedule(2):
+    #    s.print()
     #for i in combinations(range(6), 6):
     #    for j in i:
     #        print(j, end='')
     #    print()
     # print(s.combine([0.2, 0.5, 0.1, 0.4]))
     # print(s.combine([s.combine([s.combine([0.2, 0.5]), 0.1]), 0.4]))
-    
+
