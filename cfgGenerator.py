@@ -85,17 +85,42 @@ class DAG:
                 notInKernel=False
             elif notInKernel == False and "}" == line[0]:
                 #print(self.consumerDict)
-                return 
+                break 
             if '<label>' not in line and '%' in line: 
                 self.memberList.append(DAGNode(line,self.consumerDict, self.producerDict,costarr[j]))  
                 #print(j)
                 if self.root is None:
-                    self.root = self.memberList[0] 
+                    self.root = self.memberList[0]
+        self.compress()
+
     def dagPop(self):
         for item in self.memberList:
             for cs in item.consumerStr:
                 if cs in self.producerDict:
                     item.consumes.append(self.producerDict[cs])
+
+    def compress(self):
+        print("h")
+        suspects = []
+        for item in self.memberList: 
+            if item.op == 'sext':
+                if len(item.eatsme) == 1: #only one thing consumes this producer; probably a fake instruction 
+                    suspects.append(item)
+        for suspect in suspects:
+            if suspect.eatsme[0].op == 'getelementptr':
+                getter = suspect.eatsme[0]
+                if len(getter.eatsme) == 1 and getter.eatsme[0].op == 'load':
+                    #If we get down to this chain, we have detected a chain of instr that should just be one load 
+                    load = getter.eatsme[0] 
+                    load.rawLine = getter.rawLine.replace('getelementptr','load')
+                    load.rawLine = load.rawLine.replace(suspect.prod, suspect.consumerStr[0]) 
+                    load.rawLine = load.rawLine.replace(getter.prod, load.prod) 
+                    fixMe = self.producerDict[suspect.consumerStr[0]]
+                    fixMe.eatsme.remove(suspect)
+                    fixMe.eatsme.append(load) 
+                    load.consumerStr.append(fixMe.prod)
+                    self.memberList.remove(getter)
+                    self.memberList.remove(suspect)                
         
 def dagPrint(DAG):
     dot = Digraph(comment='DAG')
@@ -123,34 +148,11 @@ def dagPrint(DAG):
     #    print('consumed registers are: ' + str(item.consumerStr))
 #def dagReduce(DAG):
 
-def dagCompress(DAG):
-    suspects = []
-    for item in DAG.memberList: 
-        if item.op == 'sext':
-            if len(item.eatsme) == 1: #only one thing consumes this producer; probably a fake instruction 
-                suspects.append(item)
-    for suspect in suspects:
-        if suspect.eatsme[0].op == 'getelementptr':
-            getter = suspect.eatsme[0]
-            if len(getter.eatsme) == 1 and getter.eatsme[0].op == 'load':
-                #If we get down to this chain, we have detected a chain of instr that should just be one load 
-                load = getter.eatsme[0] 
-                load.rawLine = getter.rawLine.replace('getelementptr','load')
-                load.rawLine = load.rawLine.replace(suspect.prod, suspect.consumerStr[0]) 
-                load.rawLine = load.rawLine.replace(getter.prod, load.prod) 
-                fixMe = DAG.producerDict[suspect.consumerStr[0]]
-                fixMe.eatsme.remove(suspect)
-                fixMe.eatsme.append(load) 
-                load.consumerStr.append(fixMe.prod)
-                DAG.memberList.remove(getter)
-                DAG.memberList.remove(suspect)                
-    return DAG            
  
 
 
 if __name__ == "__main__":
     t = DAG('output.ll')  
-    t = dagCompress(t)
     t.dagPop()
     dagPrint(t) 
 
