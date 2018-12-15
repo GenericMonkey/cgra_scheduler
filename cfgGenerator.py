@@ -5,15 +5,15 @@ from graphviz import Digraph
      : pq of highest priority instructions'''
 
 class DAGNode:
-    def __init__(self,line,consumesDict, producerDict,cost):
+    def __init__(self,id,line,consumesDict, producerDict):
         RegFinder = re.compile('%([0-9a-z\.]+)*') 
+        self.id = id
         self.op = None
         self.prod = None 
         self.consumes = []
         self.consumerStr = []
         self.eatsme = []
         self.rawLine = line
-        self.cost=cost
         if '=' in line: 
             self.prod = RegFinder.findall(line.split('=')[0])[-1] 
             self.op   = line.split('=')[1].split(' ')[1]
@@ -77,7 +77,7 @@ class DAG:
         self.consumerDict = {}
         self.producerDict = {}
         self.root =  None
-        j = 0
+        id = 0
         for line in f:
             if notInKernel == True and "kernel" not in line:
                 pass
@@ -87,8 +87,8 @@ class DAG:
                 #print(self.consumerDict)
                 break 
             if '<label>' not in line and '%' in line: 
-                self.memberList.append(DAGNode(line,self.consumerDict, self.producerDict,costarr[j]))  
-                #print(j)
+                self.memberList.append(DAGNode(id,line,self.consumerDict, self.producerDict))  
+                id += 1
                 if self.root is None:
                     self.root = self.memberList[0]
         self.compress()
@@ -100,7 +100,6 @@ class DAG:
                     item.consumes.append(self.producerDict[cs])
 
     def compress(self):
-        print("h")
         suspects = []
         for item in self.memberList: 
             if item.op == 'sext':

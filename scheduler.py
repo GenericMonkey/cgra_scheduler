@@ -14,14 +14,6 @@ MFU6 FU7 FU8
 DIMENSION = 2
 
 
-class Inst:
-    def __init__(self, dagNode=None):
-        if dagNode:
-            self.id = dagNode.prod
-            self.node = dagNode
-        else:
-            self.id = None
-            self.node = None
 
 class Scheduler:
     '''
@@ -30,34 +22,103 @@ class Scheduler:
     def __init__(self, dag):
         self.dag = dag
 
+
+    '''
+    Finds the earliest time with an available FU
+    '''
+    def get_earliest_slots(self, start_time=0):
+        for time, i in zip(self.schedule[start_time:], range(len(self.schedule))[start_time:]):
+            for fu_id in range(len(time)):
+                if not time[fu_id]:
+                    self.print_schedule()
+                    input()
+                    return i, [j for j in range(len(time)) if not time[j]]
+        raise Exception("No slots available")
+
     '''
     the main logic for scheduling
     '''
-    def schedule(self, ii):
-        time_slice = [Inst() for i in range(DIMENSION * DIMENSION)]
-        #TODO make dag output numops
+    def calculate_schedule(self, ii):
+        TIME = 0
+        FU_ID = 1
+        slot_lookup = {}
+        time_slice = [None for i in range(DIMENSION * DIMENSION)]
         self.schedule = [[i for i in time_slice] for j in range(ii * ceil(len(self.dag.memberList) // ii))]
-        insts_to_schedule = sorted([Inst(d) for d in self.dag.memberList], key=lambda x: x.node.height(visited=[]),reverse=True)
-        print ([x.node.op for x in insts_to_schedule])
+        insts_to_schedule = sorted([d for d in self.dag.memberList], key=lambda x: x.height(visited=[]),reverse=True)
+        print ([x.id for x in insts_to_schedule])
+        for inst in insts_to_schedule:
+            #check for parents
+            if len(inst.consumes) == 0:
+                print ("no parents")
+                #no parents. put in earliest time slot available
+                time, fu_ids = self.get_earliest_slots()
+                slot_lookup[inst.id] = (time, fu_ids[0])
+                for i in range(len(self.schedule))[time::ii]:
+                    self.schedule[i][fu_ids[0]] = inst
+            else:
+                print ("parents found")
+                #parents exist. Find when/where they were scheduled
+                parent_slots = [slot_lookup[i.id] for i in inst.consumes]
+                #find the most recent parents. (compare parent_slots[0])
+                latest_time = max([p[TIME] for p in parent_slots])
+                scheduled = False
+                while not scheduled:
+                    time, fu_ids = self.get_earliest_slots(start_time=latest_time + 1)
+                    if time - latest_time >= ii:
+                        #if all slots full for II many iterations, then fail (return false)
+                        print("Scheduling failed due to no slots left")
+                        return False
+                    #find fu in closest time that can minimize travel
+                    if time - latest_time > 1:
+                        #we can get anywhere in 2 steps, so may choose any available FU
+                        #TODO: maybe make this smarter?
+                        slot_lookup[inst.id] = (time, fu_ids[0])
+                        for i in range(len(self.schedule))[time::ii]:
+                            self.schedule[i][fu_ids[0]] = inst
+                        scheduled = True
+                    else:
+                        latest_fus = [p[FU_ID] for p in parent_slots if p[TIME] == latest_time]
+                        #compute max norm for routing distance
+                        max_dist = [max([self.fu_dist(f, l) for l in latest_fus]) for f in fu_ids]
+                        if min(max_dist) > 1:
+                            #if max norm > 1, then run again with latest_time += 1
+                            latest_time += 1
+                        else:
+                            #else, pick minimal max_norm
+                            fu_choice = fu_ids[max_dist.index(min(max_dist))]
+                            slot_lookup[inst.id] = (time, fu_choice)
+                            for i in range(len(self.schedule))[time::ii]:
+                                self.schedule[i][fu_choice] = inst
+                            scheduled = True
+                            #if single parent and curr fu not used, take that (time + 1)
+                return True
         return True
+
 
     '''
     Prints current state of schedule
     #TODO: Nice way to display inst if scheduled
     '''
-    def print(self):
+    def print_schedule(self):
         print ("CGRA")
         print ('''
         | 0 | 1 |
         | 2 | 3 |
         ''')
+        scheduled_insts = []
+        for time in self.schedule:
+            for fu in time:
+                if fu:
+                    scheduled_insts.append(fu.rawLine)
+        scheduled_insts = list(set(scheduled_insts))
+        print (scheduled_insts)
         print ('T  |0||1||2||3|')
         for time in range(len(self.schedule)):
             print('   ' + '-' * 3 * DIMENSION * DIMENSION)
             print('{}'.format(time).ljust(3),end='')
             for i in range(DIMENSION * DIMENSION):
-                val = self.schedule[time][i].id if self.schedule[time][i].id else ' '
-                print('|' + val + '|',end='')
+                val = self.schedule[time][i].id if self.schedule[time][i] else ' '
+                print('|' + str(val) + '|',end='')
             print()
     '''
     returns the list of FU neighbors. Useful for route searching
@@ -73,6 +134,16 @@ class Scheduler:
             return [1,2]
         else:
             return []
+    
+    '''
+    returns manhattan distance
+    '''
+    def fu_dist(self, fu1, fu2):
+        if fu1 == fu2:
+            return 0
+        if fu1 in self.neighbors(fu1):
+            return 1
+        return 2
 
     def top_down(self):
         self.chainlists = []
@@ -106,7 +177,9 @@ class Scheduler:
 if __name__ == '__main__':
     dag = cfgGenerator.DAG('output.ll')
     s = Scheduler(dag)
-    s.schedule(4)
+    s.calculate_schedule(4)
+    s.print_schedule()
+    print(s.get_earliest_slots()) #0, [0,1,2,3] 
     #if s.schedule(2):
     #    s.print()
     #for i in combinations(range(6), 6):
