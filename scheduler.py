@@ -27,16 +27,18 @@ class Scheduler:
     Finds the earliest time with an available FU
     '''
     def get_earliest_slots(self, start_time=0):
-        for time, i in zip(self.schedule, range(len(self.schedule)))[start_time:]:
+        for time, i in zip(self.schedule[start_time:], range(len(self.schedule))[start_time:]):
             for fu_id in range(len(time)):
                 if not time[fu_id]:
+                    self.print_schedule()
+                    input()
                     return i, [j for j in range(len(time)) if not time[j]]
         raise Exception("No slots available")
 
     '''
     the main logic for scheduling
     '''
-    def schedule(self, ii):
+    def calculate_schedule(self, ii):
         TIME = 0
         FU_ID = 1
         slot_lookup = {}
@@ -47,12 +49,14 @@ class Scheduler:
         for inst in insts_to_schedule:
             #check for parents
             if len(inst.consumes) == 0:
+                print ("no parents")
                 #no parents. put in earliest time slot available
                 time, fu_ids = self.get_earliest_slots()
                 slot_lookup[inst.id] = (time, fu_ids[0])
                 for i in range(len(self.schedule))[time::ii]:
                     self.schedule[i][fu_ids[0]] = inst
             else:
+                print ("parents found")
                 #parents exist. Find when/where they were scheduled
                 parent_slots = [slot_lookup[i.id] for i in inst.consumes]
                 #find the most recent parents. (compare parent_slots[0])
@@ -61,6 +65,7 @@ class Scheduler:
                 while not scheduled:
                     time, fu_ids = self.get_earliest_slots(start_time=latest_time + 1)
                     if time - latest_time >= ii:
+                        #if all slots full for II many iterations, then fail (return false)
                         print("Scheduling failed due to no slots left")
                         return False
                     #find fu in closest time that can minimize travel
@@ -70,13 +75,23 @@ class Scheduler:
                         slot_lookup[inst.id] = (time, fu_ids[0])
                         for i in range(len(self.schedule))[time::ii]:
                             self.schedule[i][fu_ids[0]] = inst
+                        scheduled = True
                     else:
                         latest_fus = [p[FU_ID] for p in parent_slots if p[TIME] == latest_time]
-    
-    
-                #if single parent and curr fu not used, take that (time + 1)
-                #if all slots full for II many iterations, then fail (return false)
-                pass
+                        #compute max norm for routing distance
+                        max_dist = [max([self.fu_dist(f, l) for l in latest_fus]) for f in fu_ids]
+                        if min(max_dist) > 1:
+                            #if max norm > 1, then run again with latest_time += 1
+                            latest_time += 1
+                        else:
+                            #else, pick minimal max_norm
+                            fu_choice = fu_ids[max_dist.index(min(max_dist))]
+                            slot_lookup[inst.id] = (time, fu_choice)
+                            for i in range(len(self.schedule))[time::ii]:
+                                self.schedule[i][fu_choice] = inst
+                            scheduled = True
+                            #if single parent and curr fu not used, take that (time + 1)
+                return True
         return True
 
 
@@ -90,6 +105,13 @@ class Scheduler:
         | 0 | 1 |
         | 2 | 3 |
         ''')
+        scheduled_insts = []
+        for time in self.schedule:
+            for fu in time:
+                if fu:
+                    scheduled_insts.append(fu.rawLine)
+        scheduled_insts = list(set(scheduled_insts))
+        print (scheduled_insts)
         print ('T  |0||1||2||3|')
         for time in range(len(self.schedule)):
             print('   ' + '-' * 3 * DIMENSION * DIMENSION)
@@ -112,6 +134,16 @@ class Scheduler:
             return [1,2]
         else:
             return []
+    
+    '''
+    returns manhattan distance
+    '''
+    def fu_dist(self, fu1, fu2):
+        if fu1 == fu2:
+            return 0
+        if fu1 in self.neighbors(fu1):
+            return 1
+        return 2
 
     def top_down(self):
         self.chainlists = []
@@ -145,7 +177,7 @@ class Scheduler:
 if __name__ == '__main__':
     dag = cfgGenerator.DAG('output.ll')
     s = Scheduler(dag)
-    s.schedule(4)
+    s.calculate_schedule(4)
     s.print_schedule()
     print(s.get_earliest_slots()) #0, [0,1,2,3] 
     #if s.schedule(2):

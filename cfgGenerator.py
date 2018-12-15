@@ -100,7 +100,6 @@ class DAG:
                     item.consumes.append(self.producerDict[cs])
 
     def compress(self):
-        print("h")
         suspects = []
         for item in self.memberList: 
             if item.op == 'sext':
