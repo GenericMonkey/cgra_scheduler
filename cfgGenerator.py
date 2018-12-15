@@ -37,6 +37,8 @@ class DAGNode:
                 consumesDict[consumed].append(self)
             else:
                 consumesDict[consumed] = [self]
+        if self.prod in consumesDict:
+            self.eatsme = consumesDict[self.prod]
 
     
     def height(self, visited=[]):
@@ -92,8 +94,9 @@ class DAG:
                 if self.root is None:
                     self.root = self.memberList[0]
         self.compress()
+        self.populate()
 
-    def dagPop(self):
+    def populate(self):
         for item in self.memberList:
             for cs in item.consumerStr:
                 if cs in self.producerDict:
@@ -101,10 +104,35 @@ class DAG:
 
     def compress(self):
         suspects = []
+        phisus   = []
         for item in self.memberList: 
             if item.op == 'sext':
                 if len(item.eatsme) == 1: #only one thing consumes this producer; probably a fake instruction 
                     suspects.append(item)
+            if item.op == 'phi':
+                for child in item.eatsme:
+                    if (child.op == 'add'):
+                        print (len(child.consumerStr))
+                        for op in child.eatsme:
+                            print (op.op)
+                                                
+                    if item in child.eatsme:
+                        phisus.append(item)
+                        break
+        for ps in phisus:
+            print (ps.op)
+            for children in item.eatsme:  
+                if ps in children.eatsme:
+                    print (ps.op, 'hello')
+                    ps.op = children.op
+                    ps.rawLine = children.rawLine.replace(children.prod, ps.prod)
+                    ps.consumerStr = []
+                    break
+
+
+
+
+
         for suspect in suspects:
             if suspect.eatsme[0].op == 'getelementptr':
                 getter = suspect.eatsme[0]
@@ -175,7 +203,6 @@ def dagPrint(DAG):
 
 if __name__ == "__main__":
     t = DAG('output.ll')  
-    t.dagPop()
     dagPrint(t) 
 
 

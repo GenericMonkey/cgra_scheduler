@@ -53,11 +53,13 @@ class Scheduler:
                 #no parents. put in earliest time slot available
                 time, fu_ids = self.get_earliest_slots()
                 slot_lookup[inst.id] = (time, fu_ids[0])
+                print (inst.id, "was hashed")
                 for i in range(len(self.schedule))[time::ii]:
                     self.schedule[i][fu_ids[0]] = inst
             else:
                 print ("parents found")
                 #parents exist. Find when/where they were scheduled
+                print ([i.rawLine for i in inst.consumes])
                 parent_slots = [slot_lookup[i.id] for i in inst.consumes]
                 #find the most recent parents. (compare parent_slots[0])
                 latest_time = max([p[TIME] for p in parent_slots])
