@@ -113,20 +113,19 @@ class DAG:
                 for child in item.eatsme:
                     if (child.op == 'add'):
                         print (len(child.consumerStr))
-                        for op in child.eatsme:
-                            print (op.op)
+                        
                                                 
                     if item in child.eatsme:
+                        print (item.op)
                         phisus.append(item)
                         break
         for ps in phisus:
-            print (ps.op)
-            for children in item.eatsme:  
+            for children in ps.eatsme:  
                 if ps in children.eatsme:
-                    print (ps.op, 'hello')
                     ps.op = children.op
                     ps.rawLine = children.rawLine.replace(children.prod, ps.prod)
                     ps.consumerStr = []
+                    self.memberList.remove(children)
                     break
 
 

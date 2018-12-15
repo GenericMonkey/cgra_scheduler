@@ -49,15 +49,12 @@ class Scheduler:
         for inst in insts_to_schedule:
             #check for parents
             if len(inst.consumes) == 0:
-                print ("no parents")
                 #no parents. put in earliest time slot available
                 time, fu_ids = self.get_earliest_slots()
                 slot_lookup[inst.id] = (time, fu_ids[0])
-                print (inst.id, "was hashed")
                 for i in range(len(self.schedule))[time::ii]:
                     self.schedule[i][fu_ids[0]] = inst
             else:
-                print ("parents found")
                 #parents exist. Find when/where they were scheduled
                 print ([i.rawLine for i in inst.consumes])
                 parent_slots = [slot_lookup[i.id] for i in inst.consumes]
@@ -93,7 +90,6 @@ class Scheduler:
                                 self.schedule[i][fu_choice] = inst
                             scheduled = True
                             #if single parent and curr fu not used, take that (time + 1)
-                return True
         return True
 
 
