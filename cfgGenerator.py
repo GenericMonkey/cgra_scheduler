@@ -26,8 +26,9 @@ class DAGNode:
             self.op   = line.split()[0] 
             self.consumerStr = RegFinder.findall(line) 
         if 'store' in self.op:
-            print(self.rawLine)
-            print(self.consumerStr)
+            pass
+            #print(self.rawLine)
+            #print(self.consumerStr)
         for i in range(len(self.consumerStr)):
             consumed = self.consumerStr[i].strip(',')
             self.consumerStr[i] = consumed
@@ -81,8 +82,12 @@ class DAG:
                 self.memberList.append(DAGNode(line,self.consumerDict, self.producerDict,costarr[j]))  
                 #print(j)
                 if self.root is None:
-                    self.root = self.memberList[0]
-                
+                    self.root = self.memberList[0] 
+    def dagPop(self):
+        for item in self.memberList:
+            for cs in item.consumerStr:
+                if cs in self.producerDict:
+                    item.consumes.append(self.producerDict[cs])
         
 def dagPrint(DAG):
     dot = Digraph(comment='DAG')
@@ -99,6 +104,8 @@ def dagPrint(DAG):
                 dot.edge(consumed, item.rawLine)
             else:
                 dot.edge(consumed, item.prod)
+        print(item.consumes)
+        print(item.consumerStr)
     dot.render('DAGv')
     #for item in DAG.memberList:
     #    print('opcode is: ' + str(item.op))
@@ -126,15 +133,15 @@ def dagCompress(DAG):
                 fixMe.eatsme.append(load) 
                 load.consumerStr.append(fixMe.prod)
                 DAG.memberList.remove(getter)
-                DAG.memberList.remove(suspect)
-                
+                DAG.memberList.remove(suspect)                
     return DAG            
  
 
 
 if __name__ == "__main__":
-    t = DAG('output.ll') 
-    t = dagCompress(t) 
+    t = DAG('output.ll')  
+    t = dagCompress(t)
+    t.dagPop()
     dagPrint(t) 
 
 
