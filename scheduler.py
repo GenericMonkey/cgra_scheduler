@@ -1,5 +1,6 @@
 from itertools import product, combinations, chain
-from math import inf as infinity
+from math import ceil
+from queue import PriorityQueue
 
 import cfgGenerator
 '''
@@ -35,7 +36,9 @@ class Scheduler:
     def schedule(self, ii):
         time_slice = [Inst() for i in range(DIMENSION * DIMENSION)]
         #TODO make dag output numops
-        self.schedule = [[i for i in time_slice] for j in range(ii * dag.numops)]
+        self.schedule = [[i for i in time_slice] for j in range(ii * ceil(len(self.dag.memberList) // ii))]
+        insts_to_schedule = sorted([Inst(d) for d in self.dag.memberList], key=lambda x: x.node.height(visited=[]),reverse=True)
+        print ([x.node.op for x in insts_to_schedule])
         return True
 
     '''
@@ -77,8 +80,8 @@ class Scheduler:
         for node in self.dag.memberList:
             new_chain_candidate = node.prod not in visited
             if new_chain_candidate:
-                for producer in self.dag.producerDict[node.prod]:
-                    if producer.prod not in visited:
+                for parent in node.consumes:
+                    if parent.prod not in visited:
                         new_chain_candidate = False
             if len(node.consumes) == 0 or new_chain_candidate:
                 cl = [node.prod]
@@ -86,10 +89,11 @@ class Scheduler:
                 candidate_children = [c for c in node.eatsme if c.prod not in visited]
                 while len(candidate_children) != 0:
                     to_add = candidate_children[0]
-                    cl.append(to_add.prod)
+                    if to_add.op == 'br':
+                        cl.append(to_add.prod)
                     visited[to_add.prod] = True
                     candidate_children = [c for c in to_add.eatsme if c.prod not in visited]
-                chainlists.append(cl)
+                self.chainlists.append(cl)
         print(self.chainlists)
 
 
@@ -102,7 +106,7 @@ class Scheduler:
 if __name__ == '__main__':
     dag = cfgGenerator.DAG('output.ll')
     s = Scheduler(dag)
-    s.top_down()
+    s.schedule(4)
     #if s.schedule(2):
     #    s.print()
     #for i in combinations(range(6), 6):

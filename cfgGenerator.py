@@ -14,7 +14,6 @@ class DAGNode:
         self.eatsme = []
         self.rawLine = line
         self.cost=cost
-        self.height=0 #TODO: calculate height
         if '=' in line: 
             self.prod = RegFinder.findall(line.split('=')[0])[-1] 
             self.op   = line.split('=')[1].split(' ')[1]
@@ -38,6 +37,15 @@ class DAGNode:
                 consumesDict[consumed].append(self)
             else:
                 consumesDict[consumed] = [self]
+
+    
+    def height(self, visited=[]):
+        if self.prod in visited:
+            return 0
+        visited.append(self.prod)
+        if len(self.eatsme) == 0:
+            return 0
+        return max([i.height(visited=visited) for i in self.eatsme]) + 1
         
          
             
@@ -104,8 +112,10 @@ def dagPrint(DAG):
                 dot.edge(consumed, item.rawLine)
             else:
                 dot.edge(consumed, item.prod)
-        print(item.consumes)
-        print(item.consumerStr)
+        #print([i.rawLine for i in item.eatsme])
+        print(item.rawLine)
+        #print(item.consumerStr)
+        print(item.height(visited=[]))
     dot.render('DAGv')
     #for item in DAG.memberList:
     #    print('opcode is: ' + str(item.op))
