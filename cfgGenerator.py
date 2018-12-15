@@ -119,8 +119,31 @@ class DAG:
                     fixMe.eatsme.remove(suspect)
                     fixMe.eatsme.append(load) 
                     load.consumerStr.append(fixMe.prod)
+                    load.consumerStr.remove(getter.prod)
+                    for _cs in getter.consumerStr:
+                        if _cs != suspect.prod:
+                            load.consumerStr.append(_cs)
                     self.memberList.remove(getter)
-                    self.memberList.remove(suspect)                
+                    self.memberList.remove(suspect) 
+                elif len(getter.eatsme) == 1 and getter.eatsme[0].op == 'store':  
+                    store = getter.eatsme[0]                                                                        
+                    address = None 
+                    for _cs in getter.consumerStr:               
+                        if _cs != suspect.prod:
+                            address = _cs
+                    
+                    fixMe = self.producerDict[suspect.consumerStr[0]]
+                    fixMe.eatsme.remove(suspect)
+                    fixMe.eatsme.append(store) 
+                    store.rawLine = store.rawLine.replace(getter.prod, address)
+                    store.rawLine = store.rawLine.replace('align', fixMe.prod+ ' align')  
+                    store.consumerStr.append(fixMe.prod) 
+                    store.consumerStr.append(address) 
+                    store.consumerStr.remove(getter.prod)
+                    
+                    self.memberList.remove(getter)
+                    self.memberList.remove(suspect)
+
         
 def dagPrint(DAG):
     dot = Digraph(comment='DAG')
