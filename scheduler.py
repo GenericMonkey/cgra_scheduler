@@ -41,12 +41,13 @@ class CGRA:
     '''
     pretty prints the cgra layout
     '''
-    def print_cgra(self):
-        print ("CGRA Layout")
+    def __str__(self):
+        value = "CGRA Layout\n"
         for i in range(self.dimension):
             for j in range(self.dimension):
-                print('| {} |'.format(self.dimension * i + j), end='')
-            print()
+                value += '| {} |'.format(self.dimension * i + j)
+            value += '\n'
+        return value
 
 
 class Scheduler:
@@ -111,19 +112,16 @@ class Scheduler:
                 #find the most recent parents. (compare parent_slots[0])
                 latency_info = cfgGenerator.Latency()
                 latest_parent_time = max([p[TIME] + latency_info.get_latency(p[OP]) - 1  for p in parent_slots])
-                latest_fus = [p[FU_ID] for p in parent_slots if p[TIME] + latency_info.get_latency(p[OP]) - 1 == latest_parent_time]
                 search_time = latest_parent_time + 1
                 scheduled = False
                 while not scheduled:
                     time, fu_ids = self.get_earliest_slots(start_time=search_time)
-                    if time == None or time - latest_parent_time >= ii:
+                    if time == None:
                         #if all slots full for II many iterations, then fail (return false)
                         if VERBOSE:
                             print("Scheduling failed due to no slots left")
                         return False
                     #find fu in closest time that can minimize travel
-                    #compute max norm for routing distance
-                    max_dist = [max([self.cgra.fu_dist(f, l) for l in latest_fus]) for f in fu_ids]
                     if time - latest_parent_time >= 2 * (self.cgra.dimension - 1):
                         #we can get anywhere in 2(DIM - 1)steps, so may choose any available FU
                         slot_lookup[inst.id] = (time, fu_ids[0], inst.op)
@@ -132,12 +130,23 @@ class Scheduler:
                             self.schedule[i][fu_ids[0]] = inst
                         scheduled = True
                     else:
-                        if min(max_dist) > time - latest_parent_time:
+                        fu_reach_times = [] 
+                        for f in fu_ids:
+                            times_to_reach = []
+                            for p in parent_slots:
+                                times_to_reach.append(p[TIME] + latency_info.get_latency(p[OP]) - 1 + self.cgra.fu_dist(p[FU_ID], f))
+                            worst_time_to_fu = max(times_to_reach)
+                            fu_reach_times.append(worst_time_to_fu)
+                        
+                        #latest_fus = [p[FU_ID] for p in parent_slots if p[TIME] + latency_info.get_latency(p[OP]) - 1 == latest_parent_time]
+                        #compute max norm for routing distance
+                        #max_dist = [max([self.cgra.fu_dist(f, l) for l in latest_fus]) for f in fu_ids]
+                        if min(fu_reach_times) > time:
                             #if max norm can't be reached in time, then run again with search_time += 1
                             search_time += 1
                         else:
                             #else, pick minimal max_norm
-                            fu_choice = fu_ids[max_dist.index(min(max_dist))]
+                            fu_choice = fu_ids[fu_reach_times.index(min(fu_reach_times))]
                             slot_lookup[inst.id] = (time, fu_choice, inst.op)
                             self.printable_schedule[time][fu_choice] = inst
                             for i in range(len(self.schedule))[time % ii::ii]:
@@ -159,7 +168,7 @@ class Scheduler:
     Prints current state of schedule
     '''
     def print_schedule(self):
-        self.cgra.print_cgra()
+        print (self.cgra)
         scheduled_insts = []
         for time in self.printable_schedule:
             for fu in time:
@@ -207,33 +216,6 @@ class Scheduler:
                 print('|{}|'.format(val),end='')
             print()
 
-    def top_down(self):
-        self.chainlists = []
-        visited = {}
-        for node in self.dag.memberList:
-            new_chain_candidate = node.prod not in visited
-            if new_chain_candidate:
-                for parent in node.consumes:
-                    if parent.prod not in visited:
-                        new_chain_candidate = False
-            if len(node.consumes) == 0 or new_chain_candidate:
-                cl = [node.prod]
-                visited[node.prod] = True
-                candidate_children = [c for c in node.eatsme if c.prod not in visited]
-                while len(candidate_children) != 0:
-                    to_add = candidate_children[0]
-                    if to_add.op == 'br':
-                        cl.append(to_add.prod)
-                    visited[to_add.prod] = True
-                    candidate_children = [c for c in to_add.eatsme if c.prod not in visited]
-                self.chainlists.append(cl)
-        print(self.chainlists)
-
-
-
-
-
-
 
 
 if __name__ == '__main__':
@@ -246,11 +228,17 @@ if __name__ == '__main__':
         action='store_true', 
         dest='debug',
         help='Whether or not to turn on step by step debug visualizer')
+    parser.add_argument('-s', '--size',
+        type=int,
+        required=True,
+        dest='cgra_size',
+        help='The dimension of the CGRA (square) to schedule for')
+
     info = vars(parser.parse_args())
     DEBUG = info['debug']
     VERBOSE = info['verbose']
     dag = cfgGenerator.DAG('output.ll')
-    cgra = CGRA(2)
+    cgra = CGRA(info['cgra_size'])
     s = Scheduler(dag, cgra)
     s.find_schedule()
     #c = CGRA(3)
