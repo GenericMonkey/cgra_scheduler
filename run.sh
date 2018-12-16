@@ -14,7 +14,8 @@ opt-6.0 -loop-simplify $1.bc -o $1.final.bc
 ## use the profile data as input, and apply the HW2 pass
 #opt -pgo-instr-use -pgo-test-profile-file=pgo.profdata -block-placement $1.ls.bc > $1.final.bc
 opt-6.0  -constprop -instcombine -adce -licm -adce $1.final.bc -o $1.end.bc
-opt-6.0  -mem2reg -loop-simplify -deadargelim -adce $1.end.bc > output.bc
+opt-6.0  -mem2reg -loop-simplify -deadargelim -adce -die $1.end.bc > output.bc
+opt-6.0  -load ~/583/master/HW1/HW1PASS/LLVMHW1PASS.so -printLoops output.bc -o tw.bc &> output_loops
 #opt -constprop $1.final.bc > $1.final.1.bc
 #opt -instcombine $1.final.1.bc > $1.final.3.bc
 #opt -deadargelim $1.final.3.bc > $1.final.4.bc 
@@ -25,5 +26,3 @@ opt-6.0  -mem2reg -loop-simplify -deadargelim -adce $1.end.bc > output.bc
 llvm-dis-6.0 $1.end.bc
 llvm-dis-6.0 output.bc
 llvm-dis-6.0 $1.bc
-
-
