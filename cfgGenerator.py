@@ -5,6 +5,14 @@ from graphviz import Digraph
 '''TODO: true or false if mem
      : pq of highest priority instructions'''
 
+LATENCY_MAP = {
+    'mul' : 2,
+    'sub' : 1,
+    'ashr': 1,
+    'add' : 1,
+    'load': 2,
+}
+
 class DAGNode:
     def __init__(self,id,line,consumesDict, producerDict):
         RegFinder = re.compile('%([0-9a-z\.]+)*') 

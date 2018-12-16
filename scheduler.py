@@ -1,6 +1,8 @@
+#!/usr/bin/env python3.6
 from itertools import product, combinations, chain
 from math import ceil
 from queue import PriorityQueue
+from argparse import ArgumentParser
 
 import cfgGenerator
 
@@ -12,10 +14,10 @@ FU2 FU3
 
 
 DIMENSION = 2
-#DEBUG = True
-DEBUG = False
-#VERBOSE = True
-VERBOSE = False
+DEBUG = True
+#DEBUG = False
+VERBOSE = True
+#VERBOSE = False
 
 
 
@@ -52,7 +54,6 @@ class Scheduler:
         time_slice = [None for i in range(DIMENSION * DIMENSION)]
         self.schedule = [[i for i in time_slice] for j in range(ii * ceil(len(self.dag.memberList) // ii))]
         insts_to_schedule = sorted([d for d in self.dag.memberList], key=lambda x: x.height(),reverse=True)
-        #print ([x.id for x in insts_to_schedule])
         for inst in insts_to_schedule:
             #check for parents
             if VERBOSE:
@@ -79,9 +80,10 @@ class Scheduler:
                 scheduled = False
                 while not scheduled:
                     time, fu_ids = self.get_earliest_slots(start_time=search_time)
-                    if not time or time - latest_parent_time >= ii:
+                    if time == None or time - latest_parent_time >= ii:
                         #if all slots full for II many iterations, then fail (return false)
-                        print("Scheduling failed due to no slots left")
+                        if VERBOSE:
+                            print("Scheduling failed due to no slots left")
                         return False
                     #find fu in closest time that can minimize travel
                     if time - latest_parent_time > 1:
@@ -114,8 +116,8 @@ class Scheduler:
     def get_earliest_slots(self, start_time=0):
         for time, i in zip(self.schedule[start_time:], range(len(self.schedule))[start_time:]):
             for fu_id in range(len(time)):
-                if not time[fu_id]:
-                    return i, [j for j in range(len(time)) if not time[j]]
+                if time[fu_id] == None:
+                    return i, [j for j in range(len(time)) if time[j] == None]
         return None, None
 
     '''
@@ -197,6 +199,18 @@ class Scheduler:
 
 
 if __name__ == '__main__':
+    parser = ArgumentParser(description='specify output verbosity for scheduler')
+    parser.add_argument('-v', '--verbose', 
+        action='store_true',
+        dest='verbose',
+        help='Whether or not to turn on verbose printing')
+    parser.add_argument('-d', '--debug',
+        action='store_true', 
+        dest='debug',
+        help='Whether or not to turn on step by step debug visualizer')
+    info = vars(parser.parse_args())
+    DEBUG = info['debug']
+    VERBOSE = info['verbose']
     dag = cfgGenerator.DAG('output.ll')
     s = Scheduler(dag)
     s.find_schedule()
