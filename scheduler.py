@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.6
-from itertools import product, combinations, chain
+from itertools import product
 from math import ceil
 from queue import PriorityQueue
 from argparse import ArgumentParser
@@ -13,20 +13,50 @@ FU2 FU3
 '''
 
 
-DIMENSION = 2
 DEBUG = True
 #DEBUG = False
 VERBOSE = True
 #VERBOSE = False
 
+'''
+The CGRA class represents a square mesh many-core CGRA
+'''
+class CGRA:
+    '''
+    Constructor.
+    '''
+    def __init__(self, dimension):
+        self.dimension = dimension
+
+    
+    '''
+    returns manhattan distance on dim X dim grid
+    '''
+    def fu_dist(self, fu1, fu2):
+
+        row_fu1, col_fu1 = fu1 // self.dimension, fu1 % self.dimension
+        row_fu2, col_fu2 = fu2 // self.dimension, fu2 % self.dimension
+        return abs(row_fu1 - row_fu2) + abs(col_fu1 - col_fu2)
+    
+    '''
+    pretty prints the cgra layout
+    '''
+    def print_cgra(self):
+        print ("CGRA Layout")
+        for i in range(self.dimension):
+            for j in range(self.dimension):
+                print('| {} |'.format(self.dimension * i + j), end='')
+            print()
 
 
 class Scheduler:
     '''
     Constructor. Takes ii and dag for thing to schedule
     '''
-    def __init__(self, dag):
+    def __init__(self, dag, cgra):
         self.dag = dag
+        self.cgra = cgra
+        self.ii = -1
 
 
 
@@ -35,7 +65,7 @@ class Scheduler:
     '''
     def find_schedule(self):
         success = False
-        ii = self.dag.calculate_MII(DIMENSION * DIMENSION) - 1
+        ii = self.dag.calculate_MII(self.cgra.dimension ** 2) - 1
         while not success:
             ii += 1
             success = self.calculate_schedule(ii)
@@ -55,7 +85,7 @@ class Scheduler:
         FU_ID = 1
         OP = 2
         slot_lookup = {}
-        time_slice = [None for i in range(DIMENSION * DIMENSION)]
+        time_slice = [None for i in range(self.cgra.dimension ** 2)]
         self.schedule = [[i for i in time_slice] for j in range(ii * ceil(len(self.dag.memberList) // ii))]
         self.printable_schedule = [[i for i in time_slice] for j in range(ii * ceil(len(self.dag.memberList) // ii))]
         insts_to_schedule = sorted([d for d in self.dag.memberList], key=lambda x: x.height(),reverse=True)
@@ -77,13 +107,11 @@ class Scheduler:
                     self.schedule[i][fu_ids[0]] = inst
             else:
                 #parents exist. Find when/where they were scheduled
-                #print ([i.rawLine for i in inst.consumes])
                 parent_slots = [slot_lookup[i.id] for i in inst.consumes]
-                #print ("Parent slots", parent_slots)
                 #find the most recent parents. (compare parent_slots[0])
-                #TODO: latency calculation
                 latency_info = cfgGenerator.Latency()
                 latest_parent_time = max([p[TIME] + latency_info.get_latency(p[OP]) - 1  for p in parent_slots])
+                latest_fus = [p[FU_ID] for p in parent_slots if p[TIME] + latency_info.get_latency(p[OP]) - 1 == latest_parent_time]
                 search_time = latest_parent_time + 1
                 scheduled = False
                 while not scheduled:
@@ -94,20 +122,18 @@ class Scheduler:
                             print("Scheduling failed due to no slots left")
                         return False
                     #find fu in closest time that can minimize travel
-                    if time - latest_parent_time > 1:
-                        #we can get anywhere in 2 steps, so may choose any available FU
-                        #TODO: maybe make this smarter?
+                    #compute max norm for routing distance
+                    max_dist = [max([self.cgra.fu_dist(f, l) for l in latest_fus]) for f in fu_ids]
+                    if time - latest_parent_time >= 2 * (self.cgra.dimension - 1):
+                        #we can get anywhere in 2(DIM - 1)steps, so may choose any available FU
                         slot_lookup[inst.id] = (time, fu_ids[0], inst.op)
                         self.printable_schedule[time][fu_ids[0]] = inst
                         for i in range(len(self.schedule))[time % ii::ii]:
                             self.schedule[i][fu_ids[0]] = inst
                         scheduled = True
                     else:
-                        latest_fus = [p[FU_ID] for p in parent_slots if p[TIME] + latency_info.get_latency(p[OP]) - 1 == latest_parent_time]
-                        #compute max norm for routing distance
-                        max_dist = [max([self.fu_dist(f, l) for l in latest_fus]) for f in fu_ids]
-                        if min(max_dist) > 1:
-                            #if max norm > 1, then run again with latest_time += 1
+                        if min(max_dist) > time - latest_parent_time:
+                            #if max norm can't be reached in time, then run again with search_time += 1
                             search_time += 1
                         else:
                             #else, pick minimal max_norm
@@ -117,7 +143,6 @@ class Scheduler:
                             for i in range(len(self.schedule))[time % ii::ii]:
                                 self.schedule[i][fu_choice] = inst
                             scheduled = True
-                            #if single parent and curr fu not used, take that (time + 1)
         return True
 
     '''
@@ -134,11 +159,7 @@ class Scheduler:
     Prints current state of schedule
     '''
     def print_schedule(self):
-        print ("CGRA")
-        print ('''
-        | 0 | 1 |
-        | 2 | 3 |
-        ''')
+        self.cgra.print_cgra()
         scheduled_insts = []
         for time in self.printable_schedule:
             for fu in time:
@@ -147,54 +168,44 @@ class Scheduler:
         scheduled_insts = list(set(scheduled_insts))
         #print (scheduled_insts)
         print ("Unrolled Schedule:")
-        print ('T  |0||1||2||3|')
-        print ('===============')
+        print ('T ',end='')
+        for i in range(self.cgra.dimension ** 2):
+            print('|{}|'.format(i),end='')
+        print('\n==',end='')
+        for i in range(self.cgra.dimension ** 2):
+            print('===',end='')
+        print()
         num_insts = 0
         for time in range(len(self.printable_schedule)):
-            print('   ' + '-' * 3 * DIMENSION * DIMENSION)
+            print('   ' + '-' * 3 * (self.cgra.dimension ** 2))
             print('{}'.format(time).ljust(3),end='')
-            for i in range(DIMENSION * DIMENSION):
+            for i in range(self.cgra.dimension ** 2):
                 if self.printable_schedule[time][i]:
                     num_insts += 1
                 val = self.printable_schedule[time][i].id if self.printable_schedule[time][i] else ' '
-                print('|' + str(val) + '|',end='')
+                if DEBUG:
+                    val = self.schedule[time][i].id if self.schedule[time][i] else ' '
+                print('|{}|'.format(val),end='')
             print()
             if num_insts == len(self.dag.memberList):
                 break
+        if self.ii == -1:
+            return
         print ("\nRolled Schedule")
-        print ('T  |0||1||2||3|')
-        print ('===============')
+        print ('T ',end='')
+        for i in range(self.cgra.dimension ** 2):
+            print('|{}|'.format(i),end='')
+        print('\n==',end='')
+        for i in range(self.cgra.dimension ** 2):
+            print('===',end='')
+        print()
         for time in range(self.ii):
-            print('   ' + '-' * 3 * DIMENSION * DIMENSION)
+            print('   ' + '-' * 3 * (self.cgra.dimension ** 2))
             print('{}'.format(time).ljust(3),end='')
-            for i in range(DIMENSION * DIMENSION):
+            for i in range(self.cgra.dimension ** 2):
                 val = self.schedule[time][i].id if self.schedule[time][i] else ' '
-                print('|' + str(val) + '|',end='')
+                print('|{}|'.format(val),end='')
             print()
-    '''
-    returns the list of FU neighbors. Useful for route searching
-    '''
-    def neighbors(self, fu_id):
-        if fu_id == 0:
-            return [1,2]
-        elif fu_id == 1:
-            return [0,3]
-        elif fu_id == 2:
-            return [0,3]
-        elif fu_id == 3:
-            return [1,2]
-        else:
-            return []
-    
-    '''
-    returns manhattan distance
-    '''
-    def fu_dist(self, fu1, fu2):
-        if fu1 == fu2:
-            return 0
-        if fu1 in self.neighbors(fu2):
-            return 1
-        return 2
 
     def top_down(self):
         self.chainlists = []
@@ -239,19 +250,10 @@ if __name__ == '__main__':
     DEBUG = info['debug']
     VERBOSE = info['verbose']
     dag = cfgGenerator.DAG('output.ll')
-    s = Scheduler(dag)
+    cgra = CGRA(2)
+    s = Scheduler(dag, cgra)
     s.find_schedule()
-    #result = s.calculate_schedule(5)
-    #print("Schedule Succeeded:", result)
-    #if result:
-    #    s.print_schedule()
-    #print(s.get_earliest_slots()) #0, [0,1,2,3] 
-    #if s.schedule(2):
-    #    s.print()
-    #for i in combinations(range(6), 6):
-    #    for j in i:
-    #        print(j, end='')
-    #    print()
-    # print(s.combine([0.2, 0.5, 0.1, 0.4]))
-    # print(s.combine([s.combine([s.combine([0.2, 0.5]), 0.1]), 0.4]))
+    #c = CGRA(3)
+    #for i,j in product(range(9),range(9)):
+    #    print ("Dist between {} and {} is {}".format(i,j,c.fu_dist(i,j)))
 
