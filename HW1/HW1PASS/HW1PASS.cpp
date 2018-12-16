@@ -61,6 +61,7 @@
 #include "llvm/Analysis/BlockFrequencyInfo.h"
 #include <set>
 #include <iostream> 
+#include <string>
 using namespace llvm;
 
 #define DEBUG_TYPE "hw1"
@@ -70,10 +71,14 @@ using namespace llvm;
 namespace {
 
     int recBBprint(BasicBlock * hotPtr, std::set<BasicBlock *> &seenSet, Loop * L){
-        if(seenSet.find(hotPtr) != seenSet.end() || L->contains(hotPtr) == false)
+        if(seenSet.find(hotPtr) != seenSet.end() || L->contains(hotPtr) == false )
             return 0;
         for( BasicBlock::iterator i_iter = hotPtr->begin(); i_iter != hotPtr->end(); ++i_iter) {
             Instruction * I = &(*i_iter);
+            Function * F = I->getFunction();
+            std::string name =  F->getName();
+            if (name.find("kernel") == std::string::npos)
+                return 0; 
             I->print(errs());
             errs() <<  "\n";
         }
