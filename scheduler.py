@@ -45,9 +45,10 @@ class Scheduler:
         time_slice = [None for i in range(DIMENSION * DIMENSION)]
         self.schedule = [[i for i in time_slice] for j in range(ii * ceil(len(self.dag.memberList) // ii))]
         insts_to_schedule = sorted([d for d in self.dag.memberList], key=lambda x: x.height(visited=[]),reverse=True)
-        print ([x.id for x in insts_to_schedule])
+        #print ([x.id for x in insts_to_schedule])
         for inst in insts_to_schedule:
             #check for parents
+            print ("Now scheduling {} (inst {})".format(inst.op, inst.id))
             if len(inst.consumes) == 0:
                 #no parents. put in earliest time slot available
                 time, fu_ids = self.get_earliest_slots()
@@ -56,8 +57,9 @@ class Scheduler:
                     self.schedule[i][fu_ids[0]] = inst
             else:
                 #parents exist. Find when/where they were scheduled
-                print ([i.rawLine for i in inst.consumes])
+                #print ([i.rawLine for i in inst.consumes])
                 parent_slots = [slot_lookup[i.id] for i in inst.consumes]
+                #print ("Parent slots", parent_slots)
                 #find the most recent parents. (compare parent_slots[0])
                 latest_time = max([p[TIME] for p in parent_slots])
                 scheduled = False
@@ -72,7 +74,7 @@ class Scheduler:
                         #we can get anywhere in 2 steps, so may choose any available FU
                         #TODO: maybe make this smarter?
                         slot_lookup[inst.id] = (time, fu_ids[0])
-                        for i in range(len(self.schedule))[time::ii]:
+                        for i in range(len(self.schedule))[time % ii::ii]:
                             self.schedule[i][fu_ids[0]] = inst
                         scheduled = True
                     else:
@@ -86,7 +88,7 @@ class Scheduler:
                             #else, pick minimal max_norm
                             fu_choice = fu_ids[max_dist.index(min(max_dist))]
                             slot_lookup[inst.id] = (time, fu_choice)
-                            for i in range(len(self.schedule))[time::ii]:
+                            for i in range(len(self.schedule))[time % ii::ii]:
                                 self.schedule[i][fu_choice] = inst
                             scheduled = True
                             #if single parent and curr fu not used, take that (time + 1)
@@ -139,7 +141,7 @@ class Scheduler:
     def fu_dist(self, fu1, fu2):
         if fu1 == fu2:
             return 0
-        if fu1 in self.neighbors(fu1):
+        if fu1 in self.neighbors(fu2):
             return 1
         return 2
 

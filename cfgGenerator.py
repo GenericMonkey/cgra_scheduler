@@ -112,11 +112,12 @@ class DAG:
             if item.op == 'phi':
                 for child in item.eatsme:
                     if (child.op == 'add'):
-                        print (len(child.consumerStr))
+                        #print (len(child.consumerStr))
+                        pass
                         
                                                 
                     if item in child.eatsme:
-                        print (item.op)
+                        #print (item.op)
                         phisus.append(item)
                         break
         for ps in phisus:
@@ -201,8 +202,10 @@ def dagPrint(DAG):
 
 
 if __name__ == "__main__":
-    t = DAG('output.ll')  
-    dagPrint(t) 
+    t = DAG('output.ll') 
+    #dagPrint(t) 
+    for node in t.memberList:
+        print ("Node:", node.op, node.id, "Height:", node.height(visited=[]), "Children:", [n.id for n in node.eatsme])
 
 
 #DFS from a DAG,
