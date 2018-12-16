@@ -63,7 +63,8 @@ class DAGNode:
         visited.append(self.prod)
         if len(self.eatsme) == 0:
             return 0
-        return max([i.height(visited=visited) for i in self.eatsme]) + 1
+        latency_info = Latency()
+        return max([i.height(visited=visited) for i in self.eatsme]) + latency_info.get_latency(self.op)
         
          
             
