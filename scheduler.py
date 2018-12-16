@@ -39,8 +39,11 @@ class Scheduler:
         while not success:
             ii += 1
             success = self.calculate_schedule(ii)
+            if not success and VERBOSE:
+                print ("Scheduling Failed for II: {}".format(ii))
         
         print ("Schedule Found for II: {}".format(ii))
+        self.ii = ii
         self.print_schedule()
 
 
@@ -50,9 +53,11 @@ class Scheduler:
     def calculate_schedule(self, ii):
         TIME = 0
         FU_ID = 1
+        OP = 2
         slot_lookup = {}
         time_slice = [None for i in range(DIMENSION * DIMENSION)]
         self.schedule = [[i for i in time_slice] for j in range(ii * ceil(len(self.dag.memberList) // ii))]
+        self.printable_schedule = [[i for i in time_slice] for j in range(ii * ceil(len(self.dag.memberList) // ii))]
         insts_to_schedule = sorted([d for d in self.dag.memberList], key=lambda x: x.height(),reverse=True)
         for inst in insts_to_schedule:
             #check for parents
@@ -66,8 +71,9 @@ class Scheduler:
                 time, fu_ids = self.get_earliest_slots()
                 if time == None:
                     return False
-                slot_lookup[inst.id] = (time, fu_ids[0])
-                for i in range(len(self.schedule))[time::ii]:
+                slot_lookup[inst.id] = (time, fu_ids[0], inst.op)
+                self.printable_schedule[time][fu_ids[0]] = inst
+                for i in range(len(self.schedule))[time % ii::ii]:
                     self.schedule[i][fu_ids[0]] = inst
             else:
                 #parents exist. Find when/where they were scheduled
@@ -75,7 +81,9 @@ class Scheduler:
                 parent_slots = [slot_lookup[i.id] for i in inst.consumes]
                 #print ("Parent slots", parent_slots)
                 #find the most recent parents. (compare parent_slots[0])
-                latest_parent_time = max([p[TIME] for p in parent_slots])
+                #TODO: latency calculation
+                latency_info = cfgGenerator.Latency()
+                latest_parent_time = max([p[TIME] + latency_info.get_latency(p[OP]) - 1  for p in parent_slots])
                 search_time = latest_parent_time + 1
                 scheduled = False
                 while not scheduled:
@@ -89,12 +97,13 @@ class Scheduler:
                     if time - latest_parent_time > 1:
                         #we can get anywhere in 2 steps, so may choose any available FU
                         #TODO: maybe make this smarter?
-                        slot_lookup[inst.id] = (time, fu_ids[0])
+                        slot_lookup[inst.id] = (time, fu_ids[0], inst.op)
+                        self.printable_schedule[time][fu_ids[0]] = inst
                         for i in range(len(self.schedule))[time % ii::ii]:
                             self.schedule[i][fu_ids[0]] = inst
                         scheduled = True
                     else:
-                        latest_fus = [p[FU_ID] for p in parent_slots if p[TIME] == latest_parent_time]
+                        latest_fus = [p[FU_ID] for p in parent_slots if p[TIME] + latency_info.get_latency(p[OP]) - 1 == latest_parent_time]
                         #compute max norm for routing distance
                         max_dist = [max([self.fu_dist(f, l) for l in latest_fus]) for f in fu_ids]
                         if min(max_dist) > 1:
@@ -103,7 +112,8 @@ class Scheduler:
                         else:
                             #else, pick minimal max_norm
                             fu_choice = fu_ids[max_dist.index(min(max_dist))]
-                            slot_lookup[inst.id] = (time, fu_choice)
+                            slot_lookup[inst.id] = (time, fu_choice, inst.op)
+                            self.printable_schedule[time][fu_choice] = inst
                             for i in range(len(self.schedule))[time % ii::ii]:
                                 self.schedule[i][fu_choice] = inst
                             scheduled = True
@@ -130,14 +140,31 @@ class Scheduler:
         | 2 | 3 |
         ''')
         scheduled_insts = []
-        for time in self.schedule:
+        for time in self.printable_schedule:
             for fu in time:
                 if fu:
                     scheduled_insts.append(fu.rawLine)
         scheduled_insts = list(set(scheduled_insts))
         #print (scheduled_insts)
+        print ("Unrolled Schedule:")
         print ('T  |0||1||2||3|')
-        for time in range(len(self.schedule)):
+        print ('===============')
+        num_insts = 0
+        for time in range(len(self.printable_schedule)):
+            print('   ' + '-' * 3 * DIMENSION * DIMENSION)
+            print('{}'.format(time).ljust(3),end='')
+            for i in range(DIMENSION * DIMENSION):
+                if self.printable_schedule[time][i]:
+                    num_insts += 1
+                val = self.printable_schedule[time][i].id if self.printable_schedule[time][i] else ' '
+                print('|' + str(val) + '|',end='')
+            print()
+            if num_insts == len(self.dag.memberList):
+                break
+        print ("\nRolled Schedule")
+        print ('T  |0||1||2||3|')
+        print ('===============')
+        for time in range(self.ii):
             print('   ' + '-' * 3 * DIMENSION * DIMENSION)
             print('{}'.format(time).ljust(3),end='')
             for i in range(DIMENSION * DIMENSION):
@@ -151,7 +178,7 @@ class Scheduler:
         if fu_id == 0:
             return [1,2]
         elif fu_id == 1:
-            return [2,3]
+            return [0,3]
         elif fu_id == 2:
             return [0,3]
         elif fu_id == 3:
