@@ -41,7 +41,9 @@ class DAGNode:
             self.eatsme = consumesDict[self.prod]
 
     
-    def height(self, visited=[]):
+    def height(self, visited=None):
+        if not visited:
+            visited = []
         if self.prod in visited:
             return 0
         visited.append(self.prod)
@@ -190,7 +192,7 @@ def dagPrint(DAG):
         #print([i.rawLine for i in item.eatsme])
         print(item.rawLine)
         #print(item.consumerStr)
-        print(item.height(visited=[]))
+        print(item.height())
     dot.render('DAGv')
     #for item in DAG.memberList:
     #    print('opcode is: ' + str(item.op))
@@ -205,7 +207,7 @@ if __name__ == "__main__":
     t = DAG('output.ll') 
     #dagPrint(t) 
     for node in t.memberList:
-        print ("Node:", node.op, node.id, "Height:", node.height(visited=[]), "Children:", [n.id for n in node.eatsme])
+        print ("Node:", node.op, node.id, "Height:", node.height(), "Children:", [n.id for n in node.eatsme])
 
 
 #DFS from a DAG,
