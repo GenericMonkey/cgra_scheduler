@@ -1,4 +1,5 @@
 import re
+from math import ceil
 from graphviz import Digraph
 
 '''TODO: true or false if mem
@@ -97,6 +98,7 @@ class DAG:
                     self.root = self.memberList[0]
         self.compress()
         self.populate()
+    
 
     def populate(self):
         for item in self.memberList:
@@ -173,6 +175,11 @@ class DAG:
                     self.memberList.remove(getter)
                     self.memberList.remove(suspect)
 
+    def calculate_MII(self, num_FUs):
+        resmii = int(ceil(len(self.memberList) / num_FUs))
+        recmii = 0 #TODO FIXME
+        return max(resmii, recmii)
+
         
 def dagPrint(DAG):
     dot = Digraph(comment='DAG')
@@ -206,6 +213,7 @@ def dagPrint(DAG):
 if __name__ == "__main__":
     t = DAG('output.ll') 
     #dagPrint(t) 
+    print ("MII:", t.calculate_MII(4))
     for node in t.memberList:
         print ("Node:", node.op, node.id, "Height:", node.height(), "Children:", [n.id for n in node.eatsme])
 

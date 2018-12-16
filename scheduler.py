@@ -3,16 +3,19 @@ from math import ceil
 from queue import PriorityQueue
 
 import cfgGenerator
+
 '''
-Based on a 3 x 3 CGRA with 3 memory FUs
-MFU0 FU1 FU2
-MFU3 FU4 FU5
-MFU6 FU7 FU8
+Based on a 2 x 2 CGRA with homogeneous cores
+FU0 FU1 
+FU2 FU3 
 '''
 
 
 DIMENSION = 2
-DEBUG = True
+#DEBUG = True
+DEBUG = False
+#VERBOSE = True
+VERBOSE = False
 
 
 
@@ -24,18 +27,23 @@ class Scheduler:
         self.dag = dag
 
 
-    '''
-    Finds the earliest time with an available FU
-    '''
-    def get_earliest_slots(self, start_time=0):
-        for time, i in zip(self.schedule[start_time:], range(len(self.schedule))[start_time:]):
-            for fu_id in range(len(time)):
-                if not time[fu_id]:
-                    return i, [j for j in range(len(time)) if not time[j]]
-        return None, None
 
     '''
-    the main logic for scheduling
+    starting at MII, repeatedly tries to compute a working schedule till success
+    '''
+    def find_schedule(self):
+        success = False
+        ii = self.dag.calculate_MII(DIMENSION * DIMENSION) - 1
+        while not success:
+            ii += 1
+            success = self.calculate_schedule(ii)
+        
+        print ("Schedule Found for II: {}".format(ii))
+        self.print_schedule()
+
+
+    '''
+    the main logic for scheduling, given an ii
     '''
     def calculate_schedule(self, ii):
         TIME = 0
@@ -47,7 +55,8 @@ class Scheduler:
         #print ([x.id for x in insts_to_schedule])
         for inst in insts_to_schedule:
             #check for parents
-            print ("Now scheduling {} (inst {})".format(inst.op, inst.id))
+            if VERBOSE:
+                print ("Now scheduling {} (inst {})".format(inst.op, inst.id))
             if DEBUG:
                 self.print_schedule()
                 input()
@@ -83,10 +92,7 @@ class Scheduler:
                             self.schedule[i][fu_ids[0]] = inst
                         scheduled = True
                     else:
-                        #🐛: uses latest_time rather than the most recently occuring parent times
                         latest_fus = [p[FU_ID] for p in parent_slots if p[TIME] == latest_parent_time]
-                        print (latest_fus)
-                        print (time, fu_ids)
                         #compute max norm for routing distance
                         max_dist = [max([self.fu_dist(f, l) for l in latest_fus]) for f in fu_ids]
                         if min(max_dist) > 1:
@@ -102,10 +108,18 @@ class Scheduler:
                             #if single parent and curr fu not used, take that (time + 1)
         return True
 
+    '''
+    Finds the earliest time with an available FU
+    '''
+    def get_earliest_slots(self, start_time=0):
+        for time, i in zip(self.schedule[start_time:], range(len(self.schedule))[start_time:]):
+            for fu_id in range(len(time)):
+                if not time[fu_id]:
+                    return i, [j for j in range(len(time)) if not time[j]]
+        return None, None
 
     '''
     Prints current state of schedule
-    #TODO: Nice way to display inst if scheduled
     '''
     def print_schedule(self):
         print ("CGRA")
@@ -185,10 +199,11 @@ class Scheduler:
 if __name__ == '__main__':
     dag = cfgGenerator.DAG('output.ll')
     s = Scheduler(dag)
-    result = s.calculate_schedule(6)
-    print("Schedule Succeeded:", result)
-    if result:
-        s.print_schedule()
+    s.find_schedule()
+    #result = s.calculate_schedule(5)
+    #print("Schedule Succeeded:", result)
+    #if result:
+    #    s.print_schedule()
     #print(s.get_earliest_slots()) #0, [0,1,2,3] 
     #if s.schedule(2):
     #    s.print()
