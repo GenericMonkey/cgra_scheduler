@@ -19,15 +19,16 @@ class Latency:
 
 
 class DAGNode:
-    def __init__(self,id,line,consumesDict, producerDict):
+    def __init__(self,id,line,consumesDict, producerDict,iL=True):
         RegFinder = re.compile('%([0-9a-z\.]+)*') 
         self.id = id
         self.op = None
-        self.prod = None 
+        self.prod = None  
         self.consumes = []
         self.consumerStr = []
         self.eatsme = []
         self.rawLine = line
+        self.inLoop = iL 
         if '=' in line: 
             self.prod = RegFinder.findall(line.split('=')[0])[-1] 
             self.op   = line.split('=')[1].split(' ')[1]
@@ -76,7 +77,23 @@ class DAG:
         cost = open(filename.split('.')[0] +'_cost')
         costReg = re.compile('Found an estimated cost of\ (\d+)')
         costarr=[]
+        allInLoop = True
         kflag = False
+        loopFile = None 
+        loopD = {}
+        firstIL = None
+        try:                                           
+           loopFile = open("output.loops")
+        except IOError:
+            loopFile = None    
+        if loopFile is None:
+            pass
+        else:
+            allInLoop=False
+            for line in loopFile: 
+                loopD[line] = True 
+                if firstIL is None:
+                    firstIL = line
         for line in cost:
             if kflag == True and 'for function' in line:
                 break 
@@ -97,7 +114,10 @@ class DAG:
         self.producerDict = {}
         self.root =  None
         id = 0
+        iLFlag = False
         for line in f:
+            if line == firstIL:
+                iLFlag = True
             if notInKernel == True and "kernel" not in line:
                 pass
             elif notInKernel == True and "kernel" in line:
@@ -106,7 +126,10 @@ class DAG:
                 #print(self.consumerDict)
                 break 
             if '<label>' not in line and '%' in line: 
-                self.memberList.append(DAGNode(id,line,self.consumerDict, self.producerDict))  
+                iL = allInLoop  
+                if iL == False and iLFlag == True and line in loopD:
+                    iL = loopD[line] 
+                self.memberList.append(DAGNode(id,line,self.consumerDict, self.producerDict, iL))  
                 id += 1
                 if self.root is None:
                     self.root = self.memberList[0]
@@ -229,7 +252,7 @@ if __name__ == "__main__":
     #dagPrint(t) 
     print ("MII:", t.calculate_MII(4))
     for node in t.memberList:
-        print ("Node:", node.op, node.id, "Height:", node.height(), "Children:", [n.id for n in node.eatsme])
+        print ("Node:", node.op, node.id, "Height:", node.height(), "inLoop: ", node.inLoop, "Children:", [n.id for n in node.eatsme])
 
 
 #DFS from a DAG,
