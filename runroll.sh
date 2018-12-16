@@ -19,7 +19,7 @@ opt-6.0  -constprop -instcombine -adce -licm -adce $1.final.bc -o $1.end.bc
 #run this if we are not unrolling loops
 #opt-6.0  -mem2reg -loop-simplify -deadargelim -adce -die $1.end.bc > output.bc
 # uncomment to unroll loops
-opt-6.0 -mem2reg  -deadargelim -adce -die -simplifycfg  -loops  -lcssa -loop-simplify -loop-rotate  -loop-unroll -unroll-count=2 -unroll-allow-partial  $1.end.bc -o output.bc
+opt-6.0 -mem2reg  -deadargelim -adce -die -simplifycfg  -loops  -lcssa -loop-simplify -loop-rotate  -loop-unroll -unroll-count=2 $1.end.bc -o output.bc
 
 opt-6.0  -load ~/583/master/HW1/HW1PASS/LLVMHW1PASS.so -printLoops output.bc -o tw.bc &> output_loops
 

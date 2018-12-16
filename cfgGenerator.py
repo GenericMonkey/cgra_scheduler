@@ -29,7 +29,7 @@ class DAGNode:
         self.eatsme = []
         self.rawLine = line
         self.inLoop = iL 
-        if '=' in line: 
+        if '=' in line:  
             self.prod = RegFinder.findall(line.split('=')[0])[-1] 
             self.op   = line.split('=')[1].split(' ')[1]
             cStr      = line.split('=')[1]  
@@ -43,7 +43,7 @@ class DAGNode:
             pass
             #print(self.rawLine)
             #print(self.consumerStr)
-        for i in range(len(self.consumerStr)):
+        for i in range(len(self.consumerStr)): 
             consumed = self.consumerStr[i].strip(',')
             self.consumerStr[i] = consumed
             if consumed in producerDict: 
