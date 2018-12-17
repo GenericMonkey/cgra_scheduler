@@ -107,7 +107,7 @@ class Scheduler:
                 for i in range(len(self.schedule))[time % ii::ii]:
                     self.schedule[i][fu_ids[0]] = inst
             else:
-                #parents exist. Find when/where they were scheduled
+                #parents exist. Find when/where they were scheduled  
                 parent_slots = [slot_lookup[i.id] for i in inst.consumes]
                 #find the most recent parents. (compare parent_slots[0])
                 latency_info = cfgGenerator.Latency()

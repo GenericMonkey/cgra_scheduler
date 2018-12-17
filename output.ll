@@ -7,40 +7,56 @@ target triple = "x86_64-pc-linux-gnu"
 define void @kernel(i32*, i32*, i32*, i32*) #0 {
   br label %5
 
-; <label>:5:                                      ; preds = %28, %4
-  %storemerge = phi i32 [ 0, %4 ], [ %29, %28 ]
-  %6 = icmp slt i32 %storemerge, 1024
-  br i1 %6, label %7, label %30
+; <label>:5:                                      ; preds = %5, %4
+  %storemerge1 = phi i32 [ 0, %4 ], [ %47, %5 ]
+  %6 = sext i32 %storemerge1 to i64
+  %7 = getelementptr inbounds i32, i32* %0, i64 %6
+  %8 = load i32, i32* %7, align 4
+  %9 = sub nsw i32 128, %8
+  %10 = sext i32 %storemerge1 to i64
+  %11 = getelementptr inbounds i32, i32* %1, i64 %10
+  %12 = load i32, i32* %11, align 4
+  %13 = sub nsw i32 64, %12
+  %14 = sext i32 %storemerge1 to i64
+  %15 = getelementptr inbounds i32, i32* %2, i64 %14
+  %16 = load i32, i32* %15, align 4
+  %17 = add nsw i32 %16, 32
+  %18 = mul nsw i32 %9, %9
+  %19 = mul nsw i32 %13, %13
+  %20 = mul nsw i32 %17, %17
+  %21 = add nsw i32 %18, %19
+  %22 = add nsw i32 %21, %20
+  %23 = ashr i32 %22, 2
+  %24 = sext i32 %storemerge1 to i64
+  %25 = getelementptr inbounds i32, i32* %3, i64 %24
+  store i32 %23, i32* %25, align 4
+  %26 = add nuw nsw i32 %storemerge1, 1
+  %27 = sext i32 %26 to i64
+  %28 = getelementptr inbounds i32, i32* %0, i64 %27
+  %29 = load i32, i32* %28, align 4
+  %30 = sub nsw i32 128, %29
+  %31 = sext i32 %26 to i64
+  %32 = getelementptr inbounds i32, i32* %1, i64 %31
+  %33 = load i32, i32* %32, align 4
+  %34 = sub nsw i32 64, %33
+  %35 = sext i32 %26 to i64
+  %36 = getelementptr inbounds i32, i32* %2, i64 %35
+  %37 = load i32, i32* %36, align 4
+  %38 = add nsw i32 %37, 32
+  %39 = mul nsw i32 %30, %30
+  %40 = mul nsw i32 %34, %34
+  %41 = mul nsw i32 %38, %38
+  %42 = add nsw i32 %39, %40
+  %43 = add nsw i32 %42, %41
+  %44 = ashr i32 %43, 2
+  %45 = sext i32 %26 to i64
+  %46 = getelementptr inbounds i32, i32* %3, i64 %45
+  store i32 %44, i32* %46, align 4
+  %47 = add nuw nsw i32 %26, 1
+  %48 = icmp ult i32 %47, 1024
+  br i1 %48, label %5, label %49, !llvm.loop !2
 
-; <label>:7:                                      ; preds = %5
-  %8 = sext i32 %storemerge to i64
-  %9 = getelementptr inbounds i32, i32* %0, i64 %8
-  %10 = load i32, i32* %9, align 4
-  %11 = sub nsw i32 128, %10
-  %12 = sext i32 %storemerge to i64
-  %13 = getelementptr inbounds i32, i32* %1, i64 %12
-  %14 = load i32, i32* %13, align 4
-  %15 = sub nsw i32 64, %14
-  %16 = sext i32 %storemerge to i64
-  %17 = getelementptr inbounds i32, i32* %2, i64 %16
-  %18 = load i32, i32* %17, align 4
-  %19 = add nsw i32 %18, 32
-  %20 = mul nsw i32 %11, %11
-  %21 = mul nsw i32 %15, %15
-  %22 = mul nsw i32 %19, %19
-  %23 = add nsw i32 %20, %21
-  %24 = add nsw i32 %23, %22
-  %25 = ashr i32 %24, 2
-  %26 = sext i32 %storemerge to i64
-  %27 = getelementptr inbounds i32, i32* %3, i64 %26
-  store i32 %25, i32* %27, align 4
-  br label %28
-
-; <label>:28:                                     ; preds = %7
-  %29 = add nsw i32 %storemerge, 1
-  br label %5
-
-; <label>:30:                                     ; preds = %5
+; <label>:49:                                     ; preds = %5
   ret void
 }
 
@@ -56,34 +72,44 @@ define i32 @main() #0 {
   %.sub3 = getelementptr inbounds [1024 x i32], [1024 x i32]* %4, i64 0, i64 0
   br label %5
 
-; <label>:5:                                      ; preds = %20, %0
-  %storemerge = phi i32 [ 0, %0 ], [ %21, %20 ]
-  %6 = icmp slt i32 %storemerge, 1024
-  br i1 %6, label %7, label %22
+; <label>:5:                                      ; preds = %5, %0
+  %storemerge1 = phi i32 [ 0, %0 ], [ %31, %5 ]
+  %6 = call i32 @rand() #1
+  %7 = srem i32 %6, 64
+  %8 = sext i32 %storemerge1 to i64
+  %9 = getelementptr inbounds [1024 x i32], [1024 x i32]* %1, i64 0, i64 %8
+  store i32 %7, i32* %9, align 4
+  %10 = call i32 @rand() #1
+  %11 = srem i32 %10, 64
+  %12 = sext i32 %storemerge1 to i64
+  %13 = getelementptr inbounds [1024 x i32], [1024 x i32]* %2, i64 0, i64 %12
+  store i32 %11, i32* %13, align 4
+  %14 = call i32 @rand() #1
+  %15 = srem i32 %14, 64
+  %16 = sext i32 %storemerge1 to i64
+  %17 = getelementptr inbounds [1024 x i32], [1024 x i32]* %3, i64 0, i64 %16
+  store i32 %15, i32* %17, align 4
+  %18 = add nuw nsw i32 %storemerge1, 1
+  %19 = call i32 @rand() #1
+  %20 = srem i32 %19, 64
+  %21 = sext i32 %18 to i64
+  %22 = getelementptr inbounds [1024 x i32], [1024 x i32]* %1, i64 0, i64 %21
+  store i32 %20, i32* %22, align 4
+  %23 = call i32 @rand() #1
+  %24 = srem i32 %23, 64
+  %25 = sext i32 %18 to i64
+  %26 = getelementptr inbounds [1024 x i32], [1024 x i32]* %2, i64 0, i64 %25
+  store i32 %24, i32* %26, align 4
+  %27 = call i32 @rand() #1
+  %28 = srem i32 %27, 64
+  %29 = sext i32 %18 to i64
+  %30 = getelementptr inbounds [1024 x i32], [1024 x i32]* %3, i64 0, i64 %29
+  store i32 %28, i32* %30, align 4
+  %31 = add nuw nsw i32 %18, 1
+  %32 = icmp ult i32 %31, 1024
+  br i1 %32, label %5, label %33, !llvm.loop !4
 
-; <label>:7:                                      ; preds = %5
-  %8 = call i32 @rand() #1
-  %9 = srem i32 %8, 64
-  %10 = sext i32 %storemerge to i64
-  %11 = getelementptr inbounds [1024 x i32], [1024 x i32]* %1, i64 0, i64 %10
-  store i32 %9, i32* %11, align 4
-  %12 = call i32 @rand() #1
-  %13 = srem i32 %12, 64
-  %14 = sext i32 %storemerge to i64
-  %15 = getelementptr inbounds [1024 x i32], [1024 x i32]* %2, i64 0, i64 %14
-  store i32 %13, i32* %15, align 4
-  %16 = call i32 @rand() #1
-  %17 = srem i32 %16, 64
-  %18 = sext i32 %storemerge to i64
-  %19 = getelementptr inbounds [1024 x i32], [1024 x i32]* %3, i64 0, i64 %18
-  store i32 %17, i32* %19, align 4
-  br label %20
-
-; <label>:20:                                     ; preds = %7
-  %21 = add nsw i32 %storemerge, 1
-  br label %5
-
-; <label>:22:                                     ; preds = %5
+; <label>:33:                                     ; preds = %5
   call void @kernel(i32* nonnull %.sub, i32* nonnull %.sub1, i32* nonnull %.sub2, i32* nonnull %.sub3)
   ret i32 0
 }
@@ -106,3 +132,6 @@ attributes #2 = { nounwind "correctly-rounded-divide-sqrt-fp-math"="false" "disa
 
 !0 = !{i32 1, !"wchar_size", i32 4}
 !1 = !{!"clang version 6.0.0-1ubuntu2~16.04.1 (tags/RELEASE_600/final)"}
+!2 = distinct !{!2, !3}
+!3 = !{!"llvm.loop.unroll.disable"}
+!4 = distinct !{!4, !3}
