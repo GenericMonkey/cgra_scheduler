@@ -17,7 +17,3 @@ This runs the scheduler that outputs a rolled and unrolled scheduler for a CGRA 
 python scheduler.py --size 3 --debug --verbose
 ```
 This prints a lot more things, and allows you to step through the scheduling process instruction by instruction.
-
-# Link to Write Up
-
-[here](https://www.overleaf.com/7561115417tzzwrskhnsnc)
